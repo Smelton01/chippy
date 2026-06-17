@@ -1,0 +1,38 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  core:
+    # Fast, dependency-free: the VM core tests and the raylib-free terminal build.
+    name: test + terminal (linux)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: mlugg/setup-zig@v2
+        with:
+          version: 0.16.0
+      - name: Unit tests
+        run: zig build test --summary all
+      - name: Terminal backend builds
+        run: zig build -Dbackend=terminal
+
+  desktop:
+    # Full raylib build on macOS, matching the development environment
+    # (raylib's frameworks are bundled, so no system packages are needed).
+    name: build raylib (macos)
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: mlugg/setup-zig@v2
+        with:
+          version: 0.16.0
+      - name: Unit tests
+        run: zig build test --summary all
+      - name: raylib backend builds
+        run: zig build
+      - name: Terminal backend builds
+        run: zig build -Dbackend=terminal
