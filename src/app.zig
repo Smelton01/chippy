@@ -131,7 +131,7 @@ pub fn App(comptime Backend: type) type {
 
         fn drawMenu(self: *Self) void {
             self.backend.drawDisplay(&self.banner.video);
-            self.line(0, .dim, "select a ROM   up/down move   enter load   R random   esc quit", .{});
+            self.line(0, .dim, "select a ROM   j/k move   enter load   R random   esc quit", .{});
 
             if (self.roms.items.len == 0) {
                 self.line(2, .err, "No ROMs in ./{s} — add .ch8 files (see README).", .{self.rom_dir});
@@ -264,7 +264,7 @@ pub fn App(comptime Backend: type) type {
             self.line(3, .normal, "V8 {X:0>2} V9 {X:0>2} VA {X:0>2} VB {X:0>2} VC {X:0>2} VD {X:0>2} VE {X:0>2} VF {X:0>2}", .{
                 self.vm.v[8], self.vm.v[9], self.vm.v[10], self.vm.v[11], self.vm.v[12], self.vm.v[13], self.vm.v[14], self.vm.v[15],
             });
-            self.line(4, .dim, "N / right step      SPACE {s}      BACKSPACE menu", .{if (self.mode == .paused) "resume" else "pause"});
+            self.line(4, .dim, "n/l step      SPACE {s}      h/BACKSPACE menu", .{if (self.mode == .paused) "resume" else "pause"});
         }
 
         fn peekOpcode(self: *Self) u16 {

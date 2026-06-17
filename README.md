@@ -47,18 +47,20 @@ zig build run -- --roms ~/chip8-games           # list ROMs from elsewhere
 
 ## Controls
 
+Arrow keys and vim keys (`hjkl`) both work everywhere they apply.
+
 | Where | Key | Action |
 |-------|-----|--------|
-| Menu | ↑ / ↓ | move selection |
+| Menu | ↑ / ↓ or `k` / `j` | move selection |
 | Menu | Enter | load selected ROM |
 | Menu | `R` | load a random ROM |
 | Menu | Esc | quit |
 | Running | Space | pause → debugger |
 | Running | Tab | toggle register HUD |
-| Running | Backspace | back to menu |
-| Debug (paused) | `N` / → | step one instruction |
+| Running | Backspace / `h` | back to menu |
+| Debug (paused) | `N` / `L` / → | step one instruction |
 | Debug (paused) | Space | resume |
-| Debug (paused) | Backspace | back to menu |
+| Debug (paused) | Backspace / `h` | back to menu |
 
 During emulation the CHIP-8 hex keypad is mapped to the left of a QWERTY keyboard:
 

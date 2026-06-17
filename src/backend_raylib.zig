@@ -86,16 +86,17 @@ pub const Backend = struct {
     }
 
     pub fn actionPressed(_: *Backend, action: Action) bool {
+        // Each control also has a vim binding: k/j up/down, l step, h back.
         return switch (action) {
-            .up => rl.isKeyPressed(.up),
-            .down => rl.isKeyPressed(.down),
+            .up => rl.isKeyPressed(.up) or rl.isKeyPressed(.k),
+            .down => rl.isKeyPressed(.down) or rl.isKeyPressed(.j),
             .select => rl.isKeyPressed(.enter) or rl.isKeyPressed(.kp_enter),
             .random => rl.isKeyPressed(.r),
             .quit => rl.isKeyPressed(.escape),
             .pause_resume => rl.isKeyPressed(.space),
-            .step => rl.isKeyPressed(.n) or rl.isKeyPressed(.right),
+            .step => rl.isKeyPressed(.n) or rl.isKeyPressed(.right) or rl.isKeyPressed(.l),
             .toggle_regs => rl.isKeyPressed(.tab),
-            .back => rl.isKeyPressed(.backspace),
+            .back => rl.isKeyPressed(.backspace) or rl.isKeyPressed(.h),
         };
     }
 

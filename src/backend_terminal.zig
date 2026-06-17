@@ -158,6 +158,11 @@ pub const Backend = struct {
                 0x7f, 0x08 => self.setAct(.back),
                 'n', 'N' => self.setAct(.step),
                 'r', 'R' => self.setAct(.random),
+                // vim bindings: k/j up/down, l step, h back
+                'k' => self.setAct(.up),
+                'j' => self.setAct(.down),
+                'l' => self.setAct(.step),
+                'h' => self.setAct(.back),
                 else => {},
             }
             if (keypadIndex(c)) |idx| self.keys[idx] = hold_frames;
