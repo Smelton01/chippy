@@ -19,6 +19,23 @@ jobs:
       - name: Terminal backend builds
         run: zig build -Dbackend=terminal
 
+  wasm:
+    # Build the WebAssembly core and smoke-test it under Node (no browser).
+    name: wasm (linux)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: mlugg/setup-zig@v2
+        with:
+          version: 0.16.0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Build wasm module
+        run: zig build wasm
+      - name: Smoke test (node)
+        run: node web/smoke.mjs
+
   desktop:
     # Full raylib build on macOS, matching the development environment
     # (raylib's frameworks are bundled, so no system packages are needed).

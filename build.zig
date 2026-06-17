@@ -52,4 +52,23 @@ pub fn build(b: *std.Build) void {
     const run_core_tests = b.addRunArtifact(core_tests);
     const test_step = b.step("test", "Run VM core unit tests");
     test_step.dependOn(&run_core_tests.step);
+
+    // `zig build wasm` — the WebAssembly core for the browser (web/ harness).
+    // Freestanding wasm32: no entry point, export functions + linear memory.
+    const wasm_target = b.resolveTargetQuery(.{ .cpu_arch = .wasm32, .os_tag = .freestanding });
+    const wasm = b.addExecutable(.{
+        .name = "chippy",
+        .root_module = b.createModule(.{
+            .root_source_file = b.path("src/wasm.zig"),
+            .target = wasm_target,
+            .optimize = .ReleaseSmall,
+        }),
+    });
+    wasm.entry = .disabled; // no _start
+    wasm.rdynamic = true; // export the `export fn` symbols to JS
+    const install_wasm = b.addInstallArtifact(wasm, .{
+        .dest_dir = .{ .override = .{ .custom = "../web" } }, // -> ./web/chippy.wasm
+    });
+    const wasm_step = b.step("wasm", "Build the WebAssembly module into web/");
+    wasm_step.dependOn(&install_wasm.step);
 }

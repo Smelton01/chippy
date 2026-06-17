@@ -6,3 +6,6 @@ roms/
 
 # screenshots from --shot
 _cap-*.png
+
+# built wasm artifact (zig build wasm)
+web/chippy.wasm

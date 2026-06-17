@@ -118,6 +118,8 @@ src/backend_terminal.zig terminal backend — half-block render + raw-mode input
 src/app.zig              App(comptime Backend) — menu / running / debugger
 src/main.zig             entry — arg parsing, picks the backend at comptime
 src/ibm_logo.zig         embedded IBM-logo ROM bytes for the welcome banner
+src/wasm.zig             WebAssembly entry — C-ABI shim over the core for JS
+web/                     browser harness (index.html + chip8.js) for the wasm build
 docs/PLAN.md             design & implementation plan
 ```
 
@@ -150,8 +152,25 @@ kept alive by auto-repeat) — imperfect but playable. The same controls apply;
 `chippy roms/2-ibm-logo.ch8 -Dbackend=terminal | tail`, renders a few frames and
 exits, handy for a quick look.)
 
-A future WASM/web backend is why `App` exposes `step()` separately from the
-native `run()` loop.
+## Web (WebAssembly)
+
+The CHIP-8 core also runs in the browser. Because the core (`src/chip8.zig`) has
+no OS/backend dependencies, `src/wasm.zig` exposes it to JavaScript as a small
+C-ABI shim (`loadRom` / `step` / `setKey` / `videoPtr` / register getters), and
+`web/chip8.js` owns the loop, canvas rendering, real keyboard input (with proper
+`keyup`), a WebAudio beep, ROM file-loading, and a pause/step debug panel.
+
+```sh
+zig build wasm                 # -> web/chippy.wasm (freestanding wasm32, ReleaseSmall)
+cd web && python3 -m http.server   # then open http://localhost:8000
+node web/smoke.mjs             # headless check (build wasm first)
+```
+
+It boots showing the built-in IBM logo; load a `.ch8` to play. Same keypad layout
+as the native builds. (This wraps the core directly rather than running the native
+`App` in wasm — the browser's DOM is a better fit for the menu/debugger than the
+filesystem-driven native UI. `App.step()` is still factored out should an
+in-canvas wasm backend ever be wanted.)
 
 ## Verification
 
