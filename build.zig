@@ -21,11 +21,15 @@ pub fn build(b: *std.Build) void {
     });
     exe_mod.addImport("build_options", options.createModule());
 
-    // raylib is only needed for the raylib backend.
-    if (backend == .raylib) {
-        const raylib_dep = b.dependency("raylib_zig", .{ .target = target, .optimize = optimize });
-        exe_mod.addImport("raylib", raylib_dep.module("raylib"));
-        exe_mod.linkLibrary(raylib_dep.artifact("raylib"));
+    // raylib is only needed for the raylib backend; the terminal backend needs
+    // libc for the termios/read/write/nanosleep syscalls.
+    switch (backend) {
+        .raylib => {
+            const raylib_dep = b.dependency("raylib_zig", .{ .target = target, .optimize = optimize });
+            exe_mod.addImport("raylib", raylib_dep.module("raylib"));
+            exe_mod.linkLibrary(raylib_dep.artifact("raylib"));
+        },
+        .terminal => exe_mod.link_libc = true,
     }
 
     const exe = b.addExecutable(.{ .name = "chippy", .root_module = exe_mod });

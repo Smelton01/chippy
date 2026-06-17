@@ -112,7 +112,7 @@ Targets the **modern / SUPER-CHIP** interpretation of the ambiguous opcodes:
 src/chip8.zig            VM core — pure state machine, no backend/OS (unit-tested)
 src/backend.zig          backend interface (the seam) + Action/Style enums
 src/backend_raylib.zig   raylib backend — window, framebuffer + panel, keypad, beep
-src/backend_terminal.zig terminal backend (stub) — half-block render, text panel
+src/backend_terminal.zig terminal backend — half-block render + raw-mode input
 src/app.zig              App(comptime Backend) — menu / running / debugger
 src/main.zig             entry — arg parsing, picks the backend at comptime
 src/ibm_logo.zig         embedded IBM-logo ROM bytes for the welcome banner
@@ -130,6 +130,7 @@ emulator can draw on different "screens". The backend is selected at compile tim
 ```sh
 zig build                      # raylib (default): window, audio, keyboard
 zig build -Dbackend=terminal   # terminal: half-block render, links no raylib
+zig build run -Dbackend=terminal -- --cycles 20
 ```
 
 A backend just implements the small interface in `src/backend.zig` (`drawDisplay`,
@@ -137,10 +138,18 @@ A backend just implements the small interface in `src/backend.zig` (`drawDisplay
 is never compiled, so a terminal build pulls in **no** raylib/OpenGL/audio at all
 (~2 MB binary vs ~13 MB).
 
-**Status:** the raylib backend is complete. The terminal backend is currently a
-**render-only stub** — it draws the display and info panel but input isn't wired
-yet (so it auto-exits after a few frames). A future WASM/web backend is why `App`
-exposes `step()` separately from the native `run()` loop.
+Both backends are fully playable and share the same menu / running / debugger
+logic. The **terminal backend** renders the 64×32 display as half-block
+characters (`▀▄█`) with colored panel text, redraws in place via ANSI, and reads
+the keyboard in raw mode. Because terminals have no key-release event, the game
+keypad uses *key-hold decay* (a keystroke counts as "down" for a short window,
+kept alive by auto-repeat) — imperfect but playable. The same controls apply;
+**Ctrl-C** quits from anywhere and restores the terminal. (Piping a ROM, e.g.
+`chippy roms/2-ibm-logo.ch8 -Dbackend=terminal | tail`, renders a few frames and
+exits, handy for a quick look.)
+
+A future WASM/web backend is why `App` exposes `step()` separately from the
+native `run()` loop.
 
 ## Verification
 
