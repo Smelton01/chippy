@@ -1,0 +1,5 @@
+zig-out/
+.zig-cache/
+zig-pkg/
+roms/
+*.ch8
