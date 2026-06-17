@@ -3,3 +3,6 @@ zig-out/
 zig-pkg/
 roms/
 *.ch8
+
+# screenshots from --shot
+_cap-*.png

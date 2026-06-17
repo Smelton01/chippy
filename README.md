@@ -24,27 +24,43 @@ instructions in total.
 
 ```sh
 zig build                       # build (compiles raylib the first time)
-zig build run -- <rom>          # run a ROM
-zig build run -- <rom> <scale> <cycles_per_frame>
+zig build run                   # launch into the menu (ROM picker)
+zig build run -- <rom>          # start a ROM directly
 zig build test                  # run the VM core unit tests
 ```
 
-- `scale` — window pixels per CHIP-8 pixel (default `10` → 640×320 window).
-- `cycles_per_frame` — instructions executed per 60 Hz frame (default `10`;
-  bump to ~15–30 for faster games).
+Launched with no ROM, chippy opens a **menu**: the IBM-logo welcome banner above
+a list of the `.ch8` files in `./roms`. Pick one to play.
 
-Example:
+Options (flags, any order; a bare path is a ROM to start directly):
 
 ```sh
-zig build run -- roms/2-ibm-logo.ch8
-zig build run -- roms/3-corax+.ch8 12 20
+zig build run -- --scale 12 --cycles 20         # bigger window, faster CPU
+zig build run -- roms/3-corax+.ch8              # skip the menu, run this ROM
+zig build run -- --roms ~/chip8-games           # list ROMs from elsewhere
 ```
 
-Close the window or press <kbd>Esc</kbd> to quit.
+- `--scale N` — window pixels per CHIP-8 pixel (default `10`).
+- `--cycles N` — instructions executed per 60 Hz frame (default `10`; bump to
+  ~15–30 for faster games).
+- `--roms DIR` — directory the menu lists ROMs from (default `roms`).
 
 ## Controls
 
-The original CHIP-8 hex keypad is mapped to the left of a QWERTY keyboard:
+| Where | Key | Action |
+|-------|-----|--------|
+| Menu | ↑ / ↓ | move selection |
+| Menu | Enter | load selected ROM |
+| Menu | `R` | load a random ROM |
+| Menu | Esc | quit |
+| Running | Space | pause → debugger |
+| Running | Tab | toggle register HUD |
+| Running | Backspace | back to menu |
+| Debug (paused) | `N` / → | step one instruction |
+| Debug (paused) | Space | resume |
+| Debug (paused) | Backspace | back to menu |
+
+During emulation the CHIP-8 hex keypad is mapped to the left of a QWERTY keyboard:
 
 ```
  CHIP-8 keypad        Your keyboard
@@ -53,6 +69,15 @@ The original CHIP-8 hex keypad is mapped to the left of a QWERTY keyboard:
  7 8 9 E              A S D F
  A 0 B F              Z X C V
 ```
+
+## Debugger
+
+Press **Space** during a game to pause and open the debugger. The bottom panel
+shows the program counter, the current opcode with a one-line disassembly, the
+index register `I`, stack pointer, both timers, and all 16 `V` registers. Press
+**N** (or →) to execute one instruction at a time and watch the state change;
+**Space** resumes, **Backspace** returns to the menu. Press **Tab** while running
+to toggle the same register readout live.
 
 ## ROMs
 
@@ -85,8 +110,10 @@ Targets the **modern / SUPER-CHIP** interpretation of the ambiguous opcodes:
 
 ```
 src/chip8.zig     VM core — pure state machine, no raylib/OS/file I/O (unit-tested)
-src/platform.zig  raylib layer — render, keypad, beep
-src/main.zig      driver — args, ROM load, 60 Hz loop
+src/platform.zig  raylib layer — window, framebuffer + panel, keypad, beep
+src/app.zig       app shell — menu / running / debugger state machine, ROM picker
+src/main.zig      entry — arg parsing, wires platform + app
+src/ibm_logo.zig  embedded IBM-logo ROM bytes for the welcome banner
 docs/PLAN.md      design & implementation plan
 ```
 
