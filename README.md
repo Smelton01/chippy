@@ -109,16 +109,38 @@ Targets the **modern / SUPER-CHIP** interpretation of the ambiguous opcodes:
 ## Project layout
 
 ```
-src/chip8.zig     VM core — pure state machine, no raylib/OS/file I/O (unit-tested)
-src/platform.zig  raylib layer — window, framebuffer + panel, keypad, beep
-src/app.zig       app shell — menu / running / debugger state machine, ROM picker
-src/main.zig      entry — arg parsing, wires platform + app
-src/ibm_logo.zig  embedded IBM-logo ROM bytes for the welcome banner
-docs/PLAN.md      design & implementation plan
+src/chip8.zig            VM core — pure state machine, no backend/OS (unit-tested)
+src/backend.zig          backend interface (the seam) + Action/Style enums
+src/backend_raylib.zig   raylib backend — window, framebuffer + panel, keypad, beep
+src/backend_terminal.zig terminal backend (stub) — half-block render, text panel
+src/app.zig              App(comptime Backend) — menu / running / debugger
+src/main.zig             entry — arg parsing, picks the backend at comptime
+src/ibm_logo.zig         embedded IBM-logo ROM bytes for the welcome banner
+docs/PLAN.md             design & implementation plan
 ```
 
-The core is deliberately decoupled from raylib so it can be tested headlessly and
-the renderer can be swapped without touching emulation logic.
+The core is deliberately decoupled from any backend so it can be tested headlessly
+and the renderer can be swapped without touching emulation logic.
+
+## Backends
+
+`App(comptime Backend)` is generic over a rendering/input backend, so the same
+emulator can draw on different "screens". The backend is selected at compile time:
+
+```sh
+zig build                      # raylib (default): window, audio, keyboard
+zig build -Dbackend=terminal   # terminal: half-block render, links no raylib
+```
+
+A backend just implements the small interface in `src/backend.zig` (`drawDisplay`,
+`panelLine`, `actionPressed`, `pollEmuKeys`, `setBeep`, …). The unselected backend
+is never compiled, so a terminal build pulls in **no** raylib/OpenGL/audio at all
+(~2 MB binary vs ~13 MB).
+
+**Status:** the raylib backend is complete. The terminal backend is currently a
+**render-only stub** — it draws the display and info panel but input isn't wired
+yet (so it auto-exits after a few frames). A future WASM/web backend is why `App`
+exposes `step()` separately from the native `run()` loop.
 
 ## Verification
 

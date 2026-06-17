@@ -13,8 +13,15 @@
 //!   debug    N or right step · SPACE resume · BACKSPACE menu
 
 const std = @import("std");
-const platform = @import("platform.zig");
+const build_options = @import("build_options");
 const App = @import("app.zig").App;
+
+/// Selected at comptime by `-Dbackend`. Only the chosen file is analyzed, so a
+/// terminal build never imports or links raylib.
+const Backend = switch (build_options.backend) {
+    .raylib => @import("backend_raylib.zig").Backend,
+    .terminal => @import("backend_terminal.zig").Backend,
+};
 
 pub fn main(init: std.process.Init) !void {
     const gpa = init.gpa;
@@ -44,10 +51,10 @@ pub fn main(init: std.process.Init) !void {
     }
     scale = std.math.clamp(scale, 1, 100);
 
-    var plat = platform.Platform.init(scale);
-    defer plat.deinit();
+    var backend = try Backend.init(gpa, scale);
+    defer backend.deinit();
 
-    var app = try App.init(gpa, io, &plat, rom_dir, cycles);
+    var app = try App(Backend).init(gpa, io, &backend, rom_dir, cycles);
     defer app.deinit();
 
     if (shot) |prefix| {
