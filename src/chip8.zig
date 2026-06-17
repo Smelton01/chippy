@@ -82,7 +82,7 @@ pub const Chip8 = struct {
     /// Fetch one instruction, advance PC, decode and execute it.
     pub fn cycle(self: *Chip8) void {
         const hi: u16 = self.mem(self.pc).*;
-        const lo: u16 = self.mem(self.pc + 1).*;
+        const lo: u16 = self.mem(self.pc +% 1).*;
         const opcode: u16 = (hi << 8) | lo;
         self.pc +%= 2;
 
@@ -99,6 +99,7 @@ pub const Chip8 = struct {
                     self.draw_flag = true;
                 },
                 0xEE => { // 00EE: return from subroutine
+                    if (self.sp == 0) return; // empty stack: ignore (malformed ROM)
                     self.sp -= 1;
                     self.pc = self.stack[self.sp];
                 },
@@ -106,6 +107,7 @@ pub const Chip8 = struct {
             },
             0x1000 => self.pc = nnn, // 1NNN: jump
             0x2000 => { // 2NNN: call subroutine
+                if (self.sp >= self.stack.len) return; // stack full: ignore (malformed ROM)
                 self.stack[self.sp] = self.pc;
                 self.sp += 1;
                 self.pc = nnn;
@@ -179,6 +181,8 @@ pub const Chip8 = struct {
 
     /// DXYN: XOR an N-byte sprite at (VX, VY); VF = collision. The start
     /// position wraps, but pixels past the right/bottom edge are clipped.
+    /// DXY0 (n == 0) draws zero rows — a no-op here. This is a 64x32 lores-only
+    /// emulator; the SUPER-CHIP hires 16x16-sprite meaning of DXY0 is out of scope.
     fn draw(self: *Chip8, x: u4, y: u4, n: u4) void {
         const x0: usize = self.v[x] % video_width;
         const y0: usize = self.v[y] % video_height;
@@ -220,8 +224,8 @@ pub const Chip8 = struct {
             0x29 => self.index = fontset_start + @as(u16, self.v[x] & 0x0F) * 5, // I = font(VX)
             0x33 => { // BCD of VX into I, I+1, I+2
                 self.mem(self.index).* = self.v[x] / 100;
-                self.mem(self.index + 1).* = (self.v[x] / 10) % 10;
-                self.mem(self.index + 2).* = self.v[x] % 10;
+                self.mem(self.index +% 1).* = (self.v[x] / 10) % 10;
+                self.mem(self.index +% 2).* = self.v[x] % 10;
             },
             0x55 => { // store V0..VX at [I] (modern: I unchanged)
                 var i: usize = 0;
@@ -409,6 +413,31 @@ test "00E0 clears screen" {
     c.cycle();
     try testing.expect(!c.video[42]);
     try testing.expect(c.draw_flag);
+}
+
+test "malformed ROM: stack underflow/overflow and high-I BCD don't crash" {
+    // 00EE on an empty stack must be ignored, not panic.
+    const c = runOne(0x00EE);
+    try testing.expectEqual(@as(u8, 0), c.sp);
+
+    // 2NNN with a full stack must be ignored, not overflow the 16-entry stack.
+    var f = Chip8.init(0);
+    f.sp = 16;
+    f.memory[0x200] = 0x22;
+    f.memory[0x201] = 0x06; // 2206
+    f.cycle();
+    try testing.expectEqual(@as(u8, 16), f.sp); // unchanged
+
+    // FX33 with I near u16 max must wrap (masked) rather than panic on I+1/I+2.
+    var b = Chip8.init(0);
+    b.index = 0xFFFF;
+    b.v[0] = 123;
+    b.memory[0x200] = 0xF0;
+    b.memory[0x201] = 0x33;
+    b.cycle();
+    try testing.expectEqual(@as(u8, 1), b.memory[0xFFFF & 0x0FFF]);
+    try testing.expectEqual(@as(u8, 2), b.memory[0x000 & 0x0FFF]); // (0xFFFF +% 1) & 0xFFF
+    try testing.expectEqual(@as(u8, 3), b.memory[0x001 & 0x0FFF]);
 }
 
 test "decrementTimers floors at zero" {
